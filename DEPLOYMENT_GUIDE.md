@@ -1,170 +1,292 @@
-# 🚀 FicusAgentAI — GitHub + Supabase Deployment Guide
+# 🌿 FicusAgentAI — Team Workspace
 
-## Complete Step-by-Step Setup
+> AI Automation & App Building — Complete Team Management System
+
+[![Supabase](https://img.shields.io/badge/Backend-Supabase-3ECF8E?logo=supabase)](https://supabase.com)
+[![HTML](https://img.shields.io/badge/Frontend-HTML%2FJS-orange)](https://github.com)
+[![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-blue?logo=github)](https://pages.github.com)
 
 ---
 
-## PHASE 1 — SUPABASE SETUP
+## ✨ Features
 
-### Step 1: Supabase Account बनवा
-1. जा: https://supabase.com
-2. **"Start your project"** click करा
-3. GitHub account ने signup करा (recommended)
+| Feature | Description |
+|---|---|
+| 🎯 Task Management | Assign, track, prioritize tasks with deploy status |
+| ⏱ Work Time Tracking | Employees go online/offline — sessions auto-saved |
+| 📊 Productivity Reports | Full analysis with PDF download + signature |
+| ↩ Carryforward Tasks | Overdue tasks highlighted and prioritized next day |
+| 🔔 Notifications | Real-time task assignment notifications |
+| 📁 Project Tracker | Client & internal projects with progress |
+| 👥 Team Profiles | Professional member profiles with contact info |
+| ☁️ Real-time Sync | Supabase real-time database subscriptions |
+| 🔐 Role-based Access | Founder (admin) + Employee (team member) |
+| 📱 Responsive | Works on desktop, tablet & mobile |
 
-### Step 2: New Project Create करा
-1. Dashboard वर **"New Project"** click करा
-2. Fill करा:
-   - **Project Name:** `ficusagentai`
-   - **Database Password:** एक strong password टाका (लिहून ठेवा!)
-   - **Region:** `Southeast Asia (Singapore)` — India साठी closest
-3. **"Create new project"** click करा
-4. ⏳ 2-3 minutes wait करा (database setup होतो)
+---
 
-### Step 3: API Keys मिळवा
-1. Left sidebar → **Settings** (⚙️)
-2. **API** section click करा
-3. Copy करा आणि कुठेतरी save करा:
-   - **Project URL** → `https://xxxxx.supabase.co`
-   - **anon public key** → `eyJhbGci...` (लांब string)
+## 🚀 Quick Setup
 
-### Step 4: Database Tables Create करा
-1. Left sidebar → **SQL Editor** click करा
-2. **"New query"** click करा
-3. खालील SQL paste करा आणि **Run** (▶) click करा:
+### Step 1: Supabase Setup
+
+1. Go to [supabase.com](https://supabase.com) → Create account
+2. Click **"New Project"** → Choose a name, password, region
+3. Wait for project to be ready (~2 min)
+4. Go to **SQL Editor** → Run the SQL schema below
+
+### Step 2: Run SQL Schema
+
+Copy and run this in **Supabase → SQL Editor → New Query**:
 
 ```sql
--- STEP 1: Users Table
+-- =====================================================
+-- FicusAgentAI — Supabase Database Schema
+-- =====================================================
+
+-- USERS TABLE
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'employee',
+  role TEXT NOT NULL DEFAULT 'employee',  -- 'founder' or 'employee'
   title TEXT DEFAULT 'Team Member',
   username TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
+  phone TEXT DEFAULT '',
+  email TEXT DEFAULT '',
   bg TEXT DEFAULT 'linear-gradient(135deg,#52a855,#2d6a2f)',
-  created_at TIMESTAMPTZ DEFAULT now()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- STEP 2: Tasks Table
+-- TASKS TABLE
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT DEFAULT '',
-  assign_to TEXT DEFAULT '',
-  priority TEXT DEFAULT 'medium',
-  status TEXT DEFAULT 'pending',
-  deploy TEXT DEFAULT 'no',
-  due_date TEXT DEFAULT '',
+  assign_to TEXT NOT NULL,
+  priority TEXT DEFAULT 'medium',   -- 'high', 'medium', 'low'
+  status TEXT DEFAULT 'pending',    -- 'pending', 'inprogress', 'done', 'blocked'
+  deploy TEXT DEFAULT 'no',         -- 'yes', 'no', 'na'
+  due_date DATE,
   project TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT now()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- STEP 3: Projects Table
+-- PROJECTS TABLE
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT DEFAULT '',
-  type TEXT DEFAULT 'internal',
-  status TEXT DEFAULT 'active',
-  progress INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now()
+  type TEXT DEFAULT 'internal',   -- 'client' or 'internal'
+  status TEXT DEFAULT 'active',   -- 'active', 'planning', 'paused', 'done'
+  progress INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- STEP 4: Activity Table
+-- ACTIVITY TABLE
 CREATE TABLE IF NOT EXISTS activity (
   id SERIAL PRIMARY KEY,
   text TEXT NOT NULL,
   sub TEXT DEFAULT '',
   icon TEXT DEFAULT '📌',
-  time TIMESTAMPTZ DEFAULT now()
+  time TIMESTAMPTZ DEFAULT NOW()
 );
 
--- STEP 5: Notifications Table
-CREATE TABLE IF NOT EXISTS notifs (
-  id SERIAL PRIMARY KEY,
+-- NOTIFICATIONS TABLE
+CREATE TABLE IF NOT EXISTS notifications (
+  id TEXT PRIMARY KEY,
   message TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
+  for_user_id TEXT NOT NULL,
+  type TEXT DEFAULT 'info',   -- 'task_assigned', 'info'
+  read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- STEP 6: Row Level Security Enable (important!)
-ALTER TABLE users    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tasks    ENABLE ROW LEVEL SECURITY;
+-- WORK SESSIONS TABLE
+CREATE TABLE IF NOT EXISTS work_sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  date DATE NOT NULL,
+  start_time TIMESTAMPTZ,
+  end_time TIMESTAMPTZ,
+  duration_minutes INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- =====================================================
+-- ENABLE ROW LEVEL SECURITY (RLS) — Allow all for anon
+-- =====================================================
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notifs   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE work_sessions ENABLE ROW LEVEL SECURITY;
 
--- STEP 7: Public Access Policies (anon key साठी)
-CREATE POLICY "Allow all for anon" ON users    FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon" ON tasks    FOR ALL TO anon USING (true) WITH CHECK (true);
+-- Allow all operations for anon key (app handles auth internally)
+CREATE POLICY "Allow all for anon" ON users FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for anon" ON tasks FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all for anon" ON projects FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all for anon" ON activity FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon" ON notifs   FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for anon" ON notifications FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for anon" ON work_sessions FOR ALL TO anon USING (true) WITH CHECK (true);
 
--- STEP 8: Default Data Insert करा
-INSERT INTO users (id, name, role, title, username, password, bg) VALUES
-  ('u1', 'Suraj', 'founder', 'Founder & CEO', 'suraj', 'founder123', 'linear-gradient(135deg,#f0c040,#d4a017)'),
-  ('u2', 'Piyush', 'employee', 'Developer', 'piyush', 'piyush123', 'linear-gradient(135deg,#52a855,#2d6a2f)')
-ON CONFLICT (id) DO NOTHING;
+-- =====================================================
+-- REALTIME — Enable for all tables
+-- =====================================================
+ALTER PUBLICATION supabase_realtime ADD TABLE users;
+ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
+ALTER PUBLICATION supabase_realtime ADD TABLE projects;
+ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+ALTER PUBLICATION supabase_realtime ADD TABLE work_sessions;
 
-INSERT INTO projects (id, name, description, type, status, progress) VALUES
-  ('p1', 'FicusAgentAI Platform', 'Internal team management hub', 'internal', 'active', 45),
-  ('p2', 'AI Chatbot — Client X', 'Conversational AI for e-commerce', 'client', 'active', 70)
-ON CONFLICT (id) DO NOTHING;
+-- =====================================================
+-- INSERT YOUR FOUNDER ACCOUNT
+-- =====================================================
+-- ⚠️ Change name, username, password before running!
+INSERT INTO users (id, name, role, title, username, password, bg)
+VALUES (
+  'founder-001',
+  'Suraj',           -- ← Your name
+  'founder',
+  'Founder & CEO',
+  'suraj',           -- ← Your username
+  'yourpassword',    -- ← Your password (change this!)
+  'linear-gradient(135deg,#f0c040,#d4a017)'
+) ON CONFLICT (id) DO NOTHING;
 ```
 
-4. ✅ "Success" message दिसला की tables ready आहेत!
+### Step 3: Get API Keys
+
+1. Supabase Dashboard → **Settings** → **API**
+2. Copy:
+   - **Project URL** → `https://xxxxx.supabase.co`
+   - **anon / public** key → `eyJhbGci...`
+3. ⚠️ **NEVER copy the service_role key!**
 
 ---
 
-## PHASE 2 — GITHUB SETUP
+## 🌐 Deploy on GitHub Pages
 
-### Step 5: GitHub Account + Repository
-1. जा: https://github.com
-2. Account नाही तर signup करा
-3. **"New Repository"** click करा (+ icon → New repository)
-4. Fill करा:
-   - **Repository name:** `ficusagentai`
-   - **Description:** `AI Team Workspace Manager`
-   - **Public** select करा (GitHub Pages साठी free मध्ये)
-   - ✅ **Add a README file** check करा
-5. **"Create repository"** click करा
+### Method 1: Direct Upload
 
-### Step 6: Files Upload करा
-1. Repository page वर **"Add file"** → **"Upload files"** click करा
-2. Upload करा:
-   - `ficusagentai_supabase.html` (rename to `index.html` before upload!)
-   - `README.md`
-3. Commit message: `Initial release - FicusAgentAI v2`
-4. **"Commit changes"** click करा
+1. Create a GitHub repository (e.g., `ficusagentai-workspace`)
+2. Upload these files:
+   ```
+   index.html
+   logo.png          ← Your logo file
+   README.md
+   ```
+3. Go to **Settings → Pages**
+4. Source: **main branch → / (root)**
+5. Save → Your app will be live at:
+   ```
+   https://yourusername.github.io/ficusagentai-workspace
+   ```
 
-### Step 7: GitHub Pages Enable करा
-1. Repository → **Settings** tab
-2. Left sidebar → **Pages**
-3. Source section मध्ये:
-   - Branch: **main**
-   - Folder: **/ (root)**
-4. **Save** click करा
-5. ⏳ 2-3 minutes wait करा
-6. URL दिसेल: `https://yourusername.github.io/ficusagentai`
+### Method 2: Git CLI
 
----
+```bash
+git init
+git add .
+git commit -m "🌿 FicusAgentAI workspace v2.0"
+git branch -M main
+git remote add origin https://github.com/yourusername/ficusagentai-workspace.git
+git push -u origin main
+```
 
-## PHASE 3 — VERIFY
-
-### Step 8: Test करा
-1. Supabase → **Table Editor** → tasks table उघडा
-2. App मध्ये login करा आणि एक task बनवा
-3. Supabase table editor refresh करा — task दिसला पाहिजे ✅
-4. दुसऱ्या device/browser मध्ये open करा — same data दिसला पाहिजे ✅
+Then enable GitHub Pages in repository settings.
 
 ---
 
-## ⚠️ Important Notes
+## 📁 File Structure
 
-- **Password Security:** हे demo version आहे, plain text passwords वापरतो. Production साठी Supabase Auth वापरा.
-- **API Key:** anon key public होतो — ते OK आहे. Service key कधीही frontend मध्ये टाकू नका!
-- **Data:** Supabase free tier मध्ये 500MB storage आणि 50,000 requests/month मिळतात.
+```
+ficusagentai-workspace/
+├── index.html          # Main application (all-in-one)
+├── logo.png            # Your FicusAgentAI logo
+└── README.md           # This file
+```
 
 ---
 
-*FicusAgentAI — Built with ❤️*
+## 👤 Login Credentials
+
+After setup, login with:
+- **Role:** Founder
+- **Username:** `suraj` (or whatever you set in SQL)
+- **Password:** `yourpassword` (what you set in SQL)
+
+For employees — add them via **Team Members → + Add Member**.
+
+---
+
+## 🔧 Features Explained
+
+### ⏱ Work Time Tracking
+- Employees click **"Go Online"** button (top bar) when starting work
+- Timer starts and shows live duration
+- Click again to stop — session saved to database
+- View in **My Report** or **Productivity Report**
+
+### ↩ Carryforward Tasks
+- Tasks with past due dates that are not completed show as **↩ Carryforward**
+- Orange banner appears warning team members
+- In **Task Manager → Carryforward** filter shows all overdue tasks
+- These are automatically prioritized at top of task lists
+
+### 🔔 Notifications
+- When Founder assigns a task, the employee gets a notification popup instantly
+- Bell icon (🔔) shows unread count
+- Click bell to see notification panel
+
+### 📊 Productivity Reports
+- **Founder Report:** Full team analysis, work time, completion rates
+- **Employee Report:** Personal performance + work sessions
+- **Download PDF** with signature pad (draw your signature → Download)
+
+### 👥 Profile Cards
+- Click any team member name in sidebar or Team page
+- Shows: Contact info, tasks, work time, sessions, projects
+
+---
+
+## 🗄️ Database Tables
+
+| Table | Purpose |
+|---|---|
+| `users` | Founder + employee accounts |
+| `tasks` | All tasks with status & deploy |
+| `projects` | Client & internal projects |
+| `activity` | Full activity log |
+| `notifications` | Real-time task notifications |
+| `work_sessions` | Employee online time tracking |
+
+---
+
+## ⚠️ Security Notes
+
+- This app uses **Supabase Row Level Security (RLS)** with anon key
+- App handles authentication internally (username/password stored in DB)
+- **Do NOT use service_role key** in frontend — anon key only
+- For production: Add Supabase Auth for stronger security
+- Passwords are stored as plaintext in this version — for internal team use
+
+---
+
+## 🔄 Real-time Sync
+
+All changes sync automatically across all open browsers:
+- New task assigned → notification appears
+- Task status changed → updates everywhere
+- Team member goes online → status updates
+
+---
+
+## 📞 Support
+
+Built by **FicusAgentAI** — AI Automation & App Building
+
+---
+
+*Last updated: 2026*
